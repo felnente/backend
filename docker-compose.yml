@@ -1,0 +1,53 @@
+version: "3"
+services:
+  api:
+    restart: on-failure
+    build: .
+    tty: true
+    stdin_open: true
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://postgres@db/api_development
+      TEST_DATABASE_URL: postgresql://postgres@db/api_test
+  db:
+    image: postgres:latest
+    volumes:
+      - ./docker/data-volume/postgresql:/var/lib/postgresql/data
+    ports:
+      - 5456:5432
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      - 8081:8080
+    depends_on:
+      - db
+    environment:
+      - VIRTUAL_HOST=adminer.leadster.localhost
+      - VIRTUAL_PORT=8080
+  redis:
+    image: redis:7.0.7-alpine
+    volumes:
+      - /data
+    ports:
+      - "6379:6379"
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - VIRTUAL_HOST=redis.leadster.localhost
+      - VIRTUAL_PORT=8083
+    ports:
+      - "8083:8081"
+volumes:
+  bundle_cache:
